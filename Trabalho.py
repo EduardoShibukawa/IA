@@ -32,24 +32,9 @@ from sklearn.svm import SVC
 classifier = SVC()
 classifier.fit(X_train, y_train)
 
-###
-from sklearn import feature_selection;
-fs = feature_selection.SelectPercentile(feature_selection.f_classif)
-X_new_fs = fs_svm.fit_transform(X_train, y_train)
-X_new = fs_svm.fit_transform(X_train, y_train)
-
 # Predicting the Test set results
 y_pred = classifier.predict(X_test)
-"""
-# Feature Selection 
-from sklearn.feature_selection import RFECV
-rfecv = RFECV(estimator=classifier, cv=10, scoring='accuracy', n_jobs=-1)
-X_new = rfecv.fit_transform(X, y)
 
-scores = rfecv.grid_scores_
-ranking = rfecv.ranking_
-nf = rfecv.support_
-"""
 # Making the Confusion Matrix
 from sklearn.metrics import confusion_matrix
 cm = confusion_matrix(y_test, y_pred)
