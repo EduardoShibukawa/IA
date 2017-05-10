@@ -15,29 +15,35 @@ X = dataset.iloc[:, :-1].values
 y = dataset.iloc[:, -1].values
 columns_name = dataset.columns[:-1]
 
-
-    
 # Encoding categorical data
 from sklearn.preprocessing import LabelEncoder
 # Encoding the Dependent Variable
 labelencoder_y = LabelEncoder()
 y = labelencoder_y.fit_transform(y)
-                
+
+# Feature Scaling
+from sklearn.preprocessing import StandardScaler
+sc = StandardScaler()
+sc.fit(X)
+X = sc.transform(X)
+
+"""
 # Splitting the dataset into the Training set and Test set
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
 
 # Feature Scaling
 from sklearn.preprocessing import StandardScaler
 sc = StandardScaler()
 X_train = sc.fit_transform(X_train)
 X_test = sc.transform(X_test)
+"""
 
 #### Feature Selection SelectPercentile
 from sklearn import feature_selection;
 
 select_percentile = feature_selection.SelectPercentile(feature_selection.f_classif)
-select_percentile.fit(X_train, y_train)
+select_percentile.fit(X, y)
 
 scores_sp = select_percentile.scores_
 indices_sp = np.argsort(scores_sp)[::-1]
@@ -46,7 +52,7 @@ indices_sp = np.argsort(scores_sp)[::-1]
 from sklearn.ensemble import ExtraTreesClassifier
 
 forest = ExtraTreesClassifier(n_estimators=250)
-forest.fit(X_train, y_train)
+forest.fit(X, y)
 importances_f = forest.feature_importances_
 std_f = np.std([tree.feature_importances_ for tree in forest.estimators_],
              axis=0)
@@ -62,19 +68,20 @@ from sklearn.linear_model import LinearRegression
 lr = LinearRegression()
 #rank all features, i.e continue the elimination until the last one
 rfe = RFE(lr, n_features_to_select=1)
-rfe.fit(X_train, y_train)
+rfe.fit(X, y)
 
 # Feature Selection 
-import math
 from sklearn.svm import SVC
+from sklearn.naive_bayes import BaseDiscreteNB
 from sklearn.feature_selection import RFECV
 
 #rank all features, i.e continue the elimination until the last one
 svc = SVC(kernel='linear')
-rfecv = RFECV(estimator=svc, cv=10, scoring='accuracy', n_jobs=-1)
+nb = BaseDiscreteNB()
+rfecv = RFECV(estimator=nb, cv=10, scoring='accuracy', n_jobs=-1)
 rfecv.fit(X, y)
 
-### PLOTING
+# Results
 
 print("------------------------------------------------")
 print("Features sorted by their rank(SelectPercentile):")
@@ -92,10 +99,30 @@ print("-----------------------------------------")
 print("Features sorted by their rank(RFECV\SVC):")
 print(sorted(zip(map(lambda x: round(x, 4), rfecv.ranking_), columns_name)))
 
-n_groups = len(columns_name)
+### PLOTING
+
+n_groups = np.arange(len(columns_name))
+
 y_sp = [x[1] for x in sorted(zip(map(lambda x:indices_sp[x], indices_sp), indices_sp + 1))]
 y_f = [x[1] for x in sorted(zip(map(lambda x:indices_f[x], indices_f), indices_f + 1))]
 y_rfe = rfe.ranking_
 y_rfecv = rfecv.ranking_
-    
- 
+
+bar_width = 0.20
+opacity = 0.7
+figure = plt.figure(figsize=(20,5), dpi=900) 
+plt.bar(n_groups, y_sp, bar_width, color='b', label='Select Percentile', alpha=opacity)
+plt.bar(n_groups + bar_width, y_f, bar_width, color='g', label='Forest', alpha=opacity)
+plt.bar(n_groups + bar_width * 2, y_rfe, bar_width, color='r', label='RFE', alpha=opacity)
+plt.bar(n_groups + bar_width * 3, y_rfecv, bar_width, color='black', label='RFECV', alpha=opacity)
+plt.xticks(n_groups, columns_name, rotation=90)
+plt.title('Classifier (Test set)')
+plt.xlabel('Feature')
+plt.ylabel('Rank')
+plt.yticks(n_groups + 1)
+plt.legend()
+plt.tight_layout()
+plt.grid(axis='y')
+plt.show()
+
+figure.savefig('Teste_3.png')
